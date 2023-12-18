@@ -1,0 +1,70 @@
+version: "3.5"
+
+services:
+  mauticdb:
+    # Apple Silicon users image: mysql:5.7.22, other users image: mysql:5.7
+    image: mysql:5.7.22
+    # For Apple Silicon users
+    platform: linux/x86_64
+    container_name: mauticdb
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ${MAUTIC_DB_NAME}
+      MYSQL_ROOT_PASSWORD: ${MAUTIC_DB_ROOT_PASSWORD}
+      MYSQL_USER: ${MAUTIC_DB_USER}
+      MYSQL_PASSWORD: ${MAUTIC_DB_PASSWORD}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - mysql_data:/var/lib/mysql_user
+    restart: always
+    networks:
+      - mautic-net
+
+  mautic:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        user: ${USER}
+        uid: ${UID}
+    # For Apple Silicon users
+    platform: linux/x86_64
+    container_name: mautic
+    links:
+      - mauticdb
+      - mailhog
+    depends_on:
+      - mauticdb
+    
+    environment:
+      MAUTIC_DB_HOST: ${MAUTIC_DB_HOST}
+      MYSQL_PORT_3306_TCP: ${MAUTIC_DB_PORT}
+      MAUTIC_DB_USER: ${MAUTIC_DB_USER}
+      MAUTIC_DB_PASSWORD: ${MAUTIC_DB_PASSWORD}
+      MAUTIC_DB_NAME: ${MAUTIC_DB_NAME}
+      MAUTIC_RUN_CRON_JOBS: 1
+    ports:
+      - 8080:80
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - mautic-net
+
+  mailhog:
+    # For Apple Silicon users
+    platform: linux/amd64
+    image: mailhog/mailhog
+    container_name: mailhog
+    ports:
+      - 8025:8025
+    networks:
+      - mautic-net
+
+volumes:
+  mysql_data:
+    driver: local
+networks:
+  mautic-net:
+    driver: bridge

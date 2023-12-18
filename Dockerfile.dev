@@ -1,0 +1,59 @@
+FROM php:8.0-apache
+
+RUN apt-get update -y
+
+RUN curl -sL https://deb.nodesource.com/setup_20.x  | bash -
+
+RUN apt-get install --no-install-recommends -y \
+    cron \
+    git \
+    wget \
+    sudo \
+    libc-client-dev \
+    libicu-dev \
+    libkrb5-dev \
+    libssl-dev \
+    libz-dev \
+    libzip-dev \
+    libpng-dev \
+    unzip \
+    zip \
+    nodejs \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm /etc/cron.daily/*
+
+RUN docker-php-ext-configure imap --with-imap --with-imap-ssl --with-kerberos \
+    && docker-php-ext-configure opcache --enable-opcache \
+    && docker-php-ext-install imap intl mysqli pdo_mysql zip opcache bcmath sockets gd zip\
+    && docker-php-ext-enable imap intl mysqli pdo_mysql zip opcache bcmath sockets gd
+
+COPY ./docker/php.ini /usr/local/etc/php/php.ini
+
+RUN a2enmod rewrite
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+ARG user
+ARG uid
+
+RUN useradd -G www-data,root -u $uid -d /home/$user $user
+RUN mkdir -p /home/$user/.composer && \
+    chown -R $user:$user /home/$user
+
+ENV MAUTIC_DB_HOST=${MAUTIC_DB_HOST}
+ENV MAUTIC_DB_USER=${MAUTIC_DB_USER}
+ENV MAUTIC_DB_NAME=${MAUTIC_DB_NAME}
+ENV MAUTIC_DB_PASSWORD=${MAUTIC_DB_PASSWORD}
+
+COPY ./docker/makeconfig.php /makeconfig.php
+COPY ./docker/makedb.php /makedb.php
+COPY ./docker/mautic.crontab /etc/cron.d/mautic
+COPY ./docker/docker-entrypoint.sh /entrypoint.sh
+
+WORKDIR /var/www/html
+USER $user
+
+CMD ["apache2-foreground"]
+
+ENTRYPOINT ["/entrypoint.sh"]
