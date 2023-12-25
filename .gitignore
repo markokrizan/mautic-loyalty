@@ -15,6 +15,7 @@
 .env
 /.env.local
 /.env.local.php
+!.env.dev.example
 /composer.phar
 /coverage.xml
 /app/bootstrap*
@@ -101,7 +102,6 @@
 /media/js/froogaloop.min.js
 /media/js/jquery.min.js
 
-/plugins/*
 !/plugins/GrapesJsBuilderBundle
 !/plugins/MauticClearbitBundle
 !/plugins/MauticCloudStorageBundle

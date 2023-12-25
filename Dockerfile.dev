@@ -46,13 +46,14 @@ ENV MAUTIC_DB_USER=${MAUTIC_DB_USER}
 ENV MAUTIC_DB_NAME=${MAUTIC_DB_NAME}
 ENV MAUTIC_DB_PASSWORD=${MAUTIC_DB_PASSWORD}
 
-COPY ./docker/makeconfig.php /makeconfig.php
-COPY ./docker/makedb.php /makedb.php
-COPY ./docker/mautic.crontab /etc/cron.d/mautic
-COPY ./docker/docker-entrypoint.sh /entrypoint.sh
-
 WORKDIR /var/www/html
 USER $user
+
+COPY --chown=$user:$user . .
+COPY --chown=$user:$user ./docker/makeconfig.php /makeconfig.php
+COPY --chown=$user:$user ./docker/makedb.php /makedb.php
+COPY --chown=$user:$user ./docker/mautic.crontab /etc/cron.d/mautic
+COPY --chown=$user:$user ./docker/docker-entrypoint.sh /entrypoint.sh
 
 CMD ["apache2-foreground"]
 
